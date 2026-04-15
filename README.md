@@ -114,7 +114,7 @@ Output
 
 <img width="1382" height="257" alt="tinylama-pull" src="https://github.com/user-attachments/assets/ab9431d5-3de6-469b-8bd0-4cc259f5a9b5" />
 
-## Benchmark Test 1 
+### Benchmark Test 1 
 
 `ramalama run ollama://tinyllama "What are the Four Foundations of the Fedora project?"`
 
@@ -127,7 +127,7 @@ Output
 - The only thing partially correct was that it gave **Community** which is close in spirit to the actual fedora foundation-**Friends** 
 
 
-## Benchmark Test 2 
+### Benchmark Test 2 
 
 `ramalama run ollama://tinyllama "Write a simple RPM spec file header (Name, Version, Release, Summary, License) for a package named 'test-app'. Use standard RPM spec syntax."`
 
@@ -136,7 +136,12 @@ Output
 <img width="1307" height="172" alt="Tinyllama-response2" src="https://github.com/user-attachments/assets/e5f57d36-6214-4cf5-a0ec-1335a45f2808" />
 
 - The model asked for a "Depends" section.
-- This is a sign that TinyLlama confused Debian/Ubuntu (.deb) syntax with Fedora (.rpm) syntax. The dependency tag `Depends:` is used in the Debian ecosysyem whereas Fedora uses `Requires:`  tag. 
+- This is a sign that TinyLlama confused Debian/Ubuntu (.deb) syntax with Fedora (.rpm) syntax. The dependency tag `Depends:` is used in the Debian ecosysyem whereas Fedora uses `Requires:`  tag.
+
+ ## Does Ramalama make AI boring
+
+Talking in terms of tooling ramalama does make AI boring. The same `ramalama run` command is used irrespective of whether the model comes from Hugging Face or Ollama. RamaLama takes care of the heavy lifting of containers (Podman/Docker) in the background. It takes away the hassle of settong up python environments CUDA drivers etc.
+
 
 
 
