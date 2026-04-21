@@ -138,6 +138,50 @@ Output
 - The model asked for a "Depends" section.
 - This is a sign that TinyLlama confused Debian/Ubuntu (.deb) syntax with Fedora (.rpm) syntax. The dependency tag `Depends:` is used in the Debian ecosysyem whereas Fedora uses `Requires:`  tag.
 
+
+## TinyLllama via Huggingface
+
+Pulling the model via huggingface
+```python
+time ramalama pull hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF
+```
+
+<img width="1410" height="262" alt="tinyllama-huggingface" src="https://github.com/user-attachments/assets/8bd48655-311c-4acc-8f30-2fd1c49b9585" />
+
+### Benchmark Test 1
+
+```python
+ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "What are the Four Foundations of the Fedora project?"
+```
+
+<img width="1477" height="226" alt="image" src="https://github.com/user-attachments/assets/c07e8107-cfbe-4758-b648-121413d42ac7" />
+
+
+### Benchmark Test 2 
+
+```python
+ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "What are the Four Foundations of the Fedora project?"
+```
+
+Output
+
+<img width="1468" height="598" alt="image" src="https://github.com/user-attachments/assets/92f942dc-3ff9-4b8c-80bf-b29ba19f9355" />
+
+
+## OCI Transport
+
+```python
+time ramalama pull oci://quay.io/ramalama/tinyllama
+```
+
+<img width="1053" height="213" alt="image" src="https://github.com/user-attachments/assets/c2779d4f-168e-42db-9131-5b7b375aad8b" />
+
+
+
+
+
+
+
  ## Does Ramalama make AI boring
 
 Talking in terms of tooling ramalama does make AI boring. The same `ramalama run` command is used irrespective of whether the model comes from Hugging Face or Ollama. RamaLama takes care of the heavy lifting of containers (Podman/Docker) in the background. It takes away the hassle of settong up python environments CUDA drivers etc.
