@@ -48,6 +48,7 @@ Output
 
 <img width="1337" height="557" alt="Qwen-response3" src="https://github.com/user-attachments/assets/e41e3127-4344-4d31-b037-c0ee284ab246" />
 
+
 I could notice 3 failures in this response
 
 -The model wrapped the output in ```xml tags. This is a Syntax Failure. RPM spec files are plain text, and adding XML tags would cause rpmbuild to fail immediately.
@@ -64,7 +65,12 @@ I could notice 3 failures in this response
 <img width="1406" height="263" alt="granite-via-ollama" src="https://github.com/user-attachments/assets/294ce3c6-3c1f-4264-96d7-b66e5d4039cf" />
 
 
+
+**Output** 
+
+
 I was able to pull granite via ollama but when I ran benchmarch test 1 it stopped after a the 180-second health check timeout. 
+
 
 <img width="1442" height="421" alt="granite-failure" src="https://github.com/user-attachments/assets/d9b362eb-48ff-455c-b63f-f01e68a8912e" />
 
@@ -94,6 +100,8 @@ Output
 
 <img width="1308" height="437" alt="Granite-MOE-response1" src="https://github.com/user-attachments/assets/0f145585-71c1-4c78-b9ea-2fd6e66a0c7d" />
 
+
+
 While unlike Qwen that refused to answer the question, Granite 3 MoE1B answered the question but it hallucinated the core identity of the Fedora Project. It replaced the foundations (Friends, Freedom, Features, First) with generic corporate/social values.
 
 ### Benchmark Test 2
@@ -103,6 +111,7 @@ While unlike Qwen that refused to answer the question, Granite 3 MoE1B answered 
 Output
 
 <img width="1311" height="426" alt="Granite-MOE-response3" src="https://github.com/user-attachments/assets/7837eb5f-0fb9-4fc9-b752-d4b19e2f3bc1" />
+
 
 - This test resulted in cross platform confusion. Instead of an RPM spec file the model provided a Debian/Ubuntu control file syntax (using keywords like Package:, Architecture:, and Description:) and mixed it with a wrong defination `noarch`.
 - I noticed that model claimed that `noarch` architecture keyword means that the package is multimedia content, not related to the Linux kernel. 
@@ -121,6 +130,7 @@ Output
 Output
 
 <img width="1301" height="371" alt="Tinyllama-response1" src="https://github.com/user-attachments/assets/de4eb3a6-cf35-429d-9e1f-c0cead01f913" />
+
 
 - This also resulted in hallucination.
 - While the model's response is not accurate unlike Granite 3 MoE1B that threw around some corporate talk, TinyLlama guessed around the word 'Fedora', it's association with Linux. Since every Linux distribution needs packages and manuals, it assumed these must be the foundations.
@@ -154,7 +164,14 @@ time ramalama pull hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF
 ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "What are the Four Foundations of the Fedora project?"
 ```
 
+**Output**
+
 <img width="1477" height="226" alt="image" src="https://github.com/user-attachments/assets/c07e8107-cfbe-4758-b648-121413d42ac7" />
+
+
+
+- The response from this model about the four foundations of the Fedora project also hallucinated. It starts with naming the four foundations as open source software, architecture, kernel and community. It guesses around the word Fedora and comes up with a few technical terms that can be associated with Fedora.  
+- It goes completly off the rails at the end by mentioning that the names of these foundations are based on the principles of sustainable forestry, which are based on the principles of organic and regenerative agriculture.
 
 
 ### Benchmark Test 2 
@@ -166,6 +183,10 @@ ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "What are the Four Foun
 Output
 
 <img width="1468" height="598" alt="image" src="https://github.com/user-attachments/assets/92f942dc-3ff9-4b8c-80bf-b29ba19f9355" />
+
+
+- TinyLlama did not produce valid syntax for RPM Spec.  Instead of standard RPM tags, it used bracketed placeholders like [Summary].
+- The model also simulated a conversation between a user and an assistant. It  hallucinated a new user prompt (<|user|> Can you please add some information....)
 
 
 ## OCI Transport
