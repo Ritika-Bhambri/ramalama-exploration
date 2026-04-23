@@ -8,6 +8,21 @@ In this experiment I have
 - I tested each model with two standard benchmark questions "List the Four Foundations of the Fedora project" and to evaluate their accuracy and "Write a simple RPM spec file header (Name, Version, Release, Summary, License) for a package named 'test-app'. Use standard RPM spec syntax."
 - I identify where the models provide correct answers against the benchmarks or 'hallucinate'
 
+## Pre- requisites
+
+### Installing Podman
+<img width="1462" height="430" alt="ramalama-podman-install" src="https://github.com/user-attachments/assets/e7f93e58-f6e1-4720-8a46-171bffe00332" />
+
+### Verifying Podman
+
+Command used - `podman run hello-world`
+
+<img width="797" height="423" alt="ramalama-podma-run" src="https://github.com/user-attachments/assets/35e9dd60-c125-4507-b253-49cdb5049e36" />
+
+### System Memory Check
+<img width="800" height="267" alt="ramalama-ram" src="https://github.com/user-attachments/assets/92393baf-5102-4db0-8027-41bcea96e227" />
+
+
 ## Installing Ramalama
 
 <img width="847" height="422" alt="ramalama-install-main" src="https://github.com/user-attachments/assets/61f6d045-fb10-4dba-9a39-ba904be3842d" />
@@ -189,7 +204,104 @@ Output
 - The model also simulated a conversation between a user and an assistant. It  hallucinated a new user prompt (<|user|> Can you please add some information....)
 
 
+## Ramalama - serve 
+
+All previous experiments used `ramalama run` which starts a model,accepts one prompt, returns one response. For this experiment I chose `ramalama serve`. It starts the model as an OpenAI-compatible REST API server. Any code that can call the OpenAI API can call a RamaLama served model, which means the RAG pipeline can be written in Python using standard libraries without any RamaLama-specific code.
+
+### Terminal 1: Starting the Server
+
+
+```bash
+ramalama serve ollama://tinyllama
+```
+
+**Output**
+
+<img width="1472" height="572" alt="Terminal1" src="https://github.com/user-attachments/assets/bdde1430-f83e-455b-b513-8fde20473b79" />
+
+
+
+**Analysing few significant lines from the Output**
+
+- `model params = 1.10 B` - confirms TinyLlama 1.1B loaded correctly
+- `file type = Q4_0` — confirms quantization level
+- `KV buffer size = 44.00 MiB` - total KV cache is only 44MB,far below the 6.1GB available. This is why TinyLlama runs whilegranite (which needed 10GB KV cache)     timed out.
+- `n_slots = 4` - the server can handle 4 concurrent requests,not just one. This is essential for a RAG system where multiple
+  users might query simultaneously.
+- `server is listening on http://0.0.0.0:8080` — the model is now accessible as a REST API on port 8080
+- `all slots are idle` - server is running and waiting for requests.
+
+### Terminal 2: Querying via REST API
+
+With the server running in Terminal 1, I opened a second terminaland sent an HTTP request using curl the same way a RAG pipeline would query the model programmatically.
+
+**Command:**
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "tinyllama",
+    "messages": [{"role": "user", "content": "What are the Four Foundations of the Fedora project?"}],
+    "max_tokens": 300
+  }' | python3 -m json.tool
+```
+
+
+**What this command does:**
+- `http://localhost:8080/v1/chat/completions` - this is the exact same endpoint path used by the OpenAI API. Any code written for OpenAI works here without modification.
+- `-H "Content-Type: application/json"` - standard JSON header
+- The body follows OpenAI's chat completion format with `messages` array and `max_tokens`
+- `python3 -m json.tool` - formats the raw JSON response for readability
+
+
+**Output**
+
+<img width="1318" height="592" alt="Terminal2" src="https://github.com/user-attachments/assets/1100fc01-5354-43ea-b98b-91c07d050e79" /> 
+
+**Key fields from the response:**
+
+```json
+{
+    "model": "tinyllama",
+    "choices": [
+        {
+            "message": {
+                "role": "assistant",
+                "content": "[model response here]"
+            },
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 20,
+        "completion_tokens": 85,
+        "total_tokens": 105
+    }
+}
+```
+
+**What the response fields mean:**
+
+- `finish_reason: "stop"` - the model completed naturally, not cut off by max_tokens. Clean termination.
+- `prompt_tokens: 20` - the input question used 20 tokens
+- `completion_tokens: 85` - the model generated 85 tokens
+- `total_tokens: 105` - total context consumed this request
+
+**Meanwhile in Terminal 1**, after the curl request was sent, the server logs showed:
+
+slot  release: id 0 | task 1 | stop due to EOS
+srv  update_slots: all slots are idle
+
+
+<img width="1301" height="578" alt="Terminal1_After" src="https://github.com/user-attachments/assets/050b93fe-9995-450a-b0ac-fdd6f824e042" />
+
+`stop due to EOS` confirms the model reached its natural end-of-sequence token - the response was complete. The server then returned to idle,
+ready for the next request.
+  
+
 ## OCI Transport
+
+OCI (Open Container Initiative) is the standard format used by Docker and Podman for container images. RamaLama supports it as a transport, which means models can be stored and distributed through any container registry. OCI pulls work in layers copying blobs, verifying a config, and writing a manifest.
 
 ```python
 time ramalama pull oci://quay.io/ramalama/tinyllama
@@ -197,10 +309,13 @@ time ramalama pull oci://quay.io/ramalama/tinyllama
 
 <img width="1053" height="213" alt="image" src="https://github.com/user-attachments/assets/c2779d4f-168e-42db-9131-5b7b375aad8b" />
 
+### Analysing the error
 
+The error `quay.io/ramalama/tinyllama:latest does not exist` is a 404 - the image path is not published on quay.io. The time output shows it failed in 2.395 seconds. RamaLama checked the registry, got a not-found response, and exited immediately. 
 
+**Finding:**
 
-
+OCI registries like quay.io do not have a standardized public model namespace the way Ollama does. On Ollama, any model listed at ollama.com/library is pullable with no setup. On quay.io, models must be explicitly published by their maintainers as OCI artifacts. There is no central catalog to browse. This makes OCI transport less convenient for discovery and experimentation but more suitable for controlled production deployments
 
 
  ## Does Ramalama make AI boring
