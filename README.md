@@ -99,7 +99,7 @@ Here is how the memory looked like after pulling granite and trying to run the b
 
 ## Granite 3 MoE1B Model via ollama
 
-Since Granite 3.1 2B would not run on my hardware I used a smaller as a workaround I pulled Granite 3 MoE1B model. IBM has MoE (Mixture of Experts) versions. These are smarter than Qwen but lighter on the CPU because they only activate a fraction of their parameters at a time.
+Since Granite 3.1 2B would not run on my hardware as a workaround I pulled the smaller Granite 3 MoE1B model. IBM has MoE (Mixture of Experts) versions. These are smarter than Qwen but lighter on the CPU because they only activate a fraction of their parameters at a time.
 
 `ramalama pull ollama://granite3-moe:1b` 
 
