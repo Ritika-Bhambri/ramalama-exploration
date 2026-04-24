@@ -250,7 +250,7 @@ ramalama run rlcr://gemma-3-1b-it "List the Four Foundations of the Fedora proje
 Error: Failed to serve model gemma-3-1b-it, for ramalama run command
 
 **Analysis:**
-Two things distinguish this failure from the granite and phi3.5 timeouts:
+This failure looked different from the granite failure due to timeout - 
 
 - **No 180 second health check** - granite and phi3.5 produced 180 seconds of dots before failing. Gemma failed in under a second. This rules out RAM exhaustion. 
 
