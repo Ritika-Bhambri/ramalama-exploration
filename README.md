@@ -224,7 +224,7 @@ ramalama serve ollama://tinyllama
 **Analysing few significant lines from the Output**
 
 - `model params = 1.10 B` - confirms TinyLlama 1.1B loaded correctly
-- `file type = Q4_0` — confirms quantization level
+- `file type = Q4_0` - confirms quantization level
 - `KV buffer size = 44.00 MiB` - total KV cache is only 44MB,far below the 6.1GB available. This is why TinyLlama runs whilegranite (which needed 10GB KV cache)     timed out.
 - `n_slots = 4` - the server can handle 4 concurrent requests,not just one. This is essential for a RAG system where multiple
   users might query simultaneously.
