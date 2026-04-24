@@ -331,7 +331,7 @@ ready for the next request.
 
 ## Failure mode analysis
 
-Three distinct failure modes emerged - not one:
+I could see three distinct failure modes- 
 
 1. **Safety refusal** - Qwen refused to answer citing safety concerns. The model is too small to differenciate publically available knowledge from sensitive information.
 
