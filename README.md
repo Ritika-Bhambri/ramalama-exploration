@@ -164,7 +164,7 @@ Output
 - This is a sign that TinyLlama confused Debian/Ubuntu (.deb) syntax with Fedora (.rpm) syntax. The dependency tag `Depends:` is used in the Debian ecosysyem whereas Fedora uses `Requires:`  tag.
 
 
-## TinyLllama via Huggingface
+## TinyLlama via Huggingface
 
 Pulling the model via huggingface
 ```python
@@ -192,7 +192,7 @@ ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "What are the Four Foun
 ### Benchmark Test 2 
 
 ```python
-ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "What are the Four Foundations of the Fedora project?"
+ramalama run hf://TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF "Write a simple RPM spec file header (Name, Version, Release, Summary, License) for a package named 'test-app'. Use standard RPM spec syntax."
 ```
 
 Output
@@ -202,6 +202,24 @@ Output
 
 - TinyLlama did not produce valid syntax for RPM Spec.  Instead of standard RPM tags, it used bracketed placeholders like [Summary].
 - The model also simulated a conversation between a user and an assistant. It  hallucinated a new user prompt (<|user|> Can you please add some information....)
+
+## OCI Transport
+
+OCI (Open Container Initiative) is the standard format used by Docker and Podman for container images. RamaLama supports it as a transport, which means models can be stored and distributed through any container registry. OCI pulls work in layers copying blobs, verifying a config, and writing a manifest.
+
+```python
+time ramalama pull oci://quay.io/ramalama/tinyllama
+```
+
+<img width="1053" height="213" alt="image" src="https://github.com/user-attachments/assets/c2779d4f-168e-42db-9131-5b7b375aad8b" />
+
+### Analysing the error
+
+The error `quay.io/ramalama/tinyllama:latest does not exist` is a 404 - the image path is not published on quay.io. The time output shows it failed in 2.395 seconds. RamaLama checked the registry, got a not-found response, and exited immediately. 
+
+**Finding:**
+
+OCI registries like quay.io do not have a standardized public model namespace the way Ollama does. On Ollama, any model listed at ollama.com/library is pullable with no setup. On quay.io, models must be explicitly published by their maintainers as OCI artifacts. There is no central catalog to browse. This makes OCI transport less convenient for discovery and experimentation but more suitable for controlled production deployments
 
 
 ## Ramalama - serve 
@@ -299,28 +317,38 @@ srv  update_slots: all slots are idle
 ready for the next request.
   
 
-## OCI Transport
 
-OCI (Open Container Initiative) is the standard format used by Docker and Podman for container images. RamaLama supports it as a transport, which means models can be stored and distributed through any container registry. OCI pulls work in layers copying blobs, verifying a config, and writing a manifest.
+## Transport comparison
 
-```python
-time ramalama pull oci://quay.io/ramalama/tinyllama
-```
+| Transport | Model | Pull Result | Run Result |
+|---|---|---|---|
+| HuggingFace | Qwen 0.5B | ✅ | ✅ (refused to answer) |
+| Ollama | Granite dense 2B | ✅ | ❌ RAM timeout |
+| Ollama | Granite MoE 1B | ✅ | ✅ (hallucinated) |
+| Ollama | TinyLlama 1.1B | ✅ | ✅ (hallucinated) |
+| HuggingFace | TinyLlama 1.1B | ✅ | ✅ (hallucinated) |
+| OCI quay.io | TinyLlama | ❌ Does not exist | — |
 
-<img width="1053" height="213" alt="image" src="https://github.com/user-attachments/assets/c2779d4f-168e-42db-9131-5b7b375aad8b" />
+## Failure mode analysis
 
-### Analysing the error
+Three distinct failure modes emerged - not one:
 
-The error `quay.io/ramalama/tinyllama:latest does not exist` is a 404 - the image path is not published on quay.io. The time output shows it failed in 2.395 seconds. RamaLama checked the registry, got a not-found response, and exited immediately. 
+1. **Safety refusal** - Qwen refused to answer citing safety concerns. The model is too small to differenciate publically available knowledge from sensitive information.
 
-**Finding:**
+2. **RAM timeout** - Granite dense 2B timed out. Disk size (1.46 GB) is not the same as runtime RAM required (~10 GB KV cache). Since there was no swap available it meant there was no fallback.
 
-OCI registries like quay.io do not have a standardized public model namespace the way Ollama does. On Ollama, any model listed at ollama.com/library is pullable with no setup. On quay.io, models must be explicitly published by their maintainers as OCI artifacts. There is no central catalog to browse. This makes OCI transport less convenient for discovery and experimentation but more suitable for controlled production deployments
+3. **Hallucination** - Every model that did run produced completely wrong answers on Fedora-specific questions. Granite MoE invented corporate values. TinyLlama invented Linux components and then connected Fedora to sustainable forestry.
+
+## The controlled transport experiment
+
+TinyLlama was pulled from both Ollama and HuggingFace. The model weights are identical. The responses to the Four Foundations question were structurally the same hallucination. This confirms that transport does not affect model output. The knowledge gap is in the weights and not in how they were delivered
 
 
  ## Does Ramalama make AI boring
 
-Talking in terms of tooling ramalama does make AI boring. The same `ramalama run` command is used irrespective of whether the model comes from Hugging Face or Ollama. RamaLama takes care of the heavy lifting of containers (Podman/Docker) in the background. It takes away the hassle of settong up python environments CUDA drivers etc.
+Talking in terms of tooling and infrastructure, ramalama does make AI boring. The same `ramalama pull` and `ramalama run` command is used irrespective of whether the model comes from Hugging Face or Ollama. RamaLama takes care of the heavy lifting of containers (Podman/Docker) in the background. `ramalama serve`, a single command turns a local model into an OpenAI-compatible API without using any configuration files, port mapping or server setup. It takes away the hassle of setting up python environments CUDA drivers etc.
+
+
 
 
 
