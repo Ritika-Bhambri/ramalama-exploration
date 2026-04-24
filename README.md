@@ -221,6 +221,42 @@ The error `quay.io/ramalama/tinyllama:latest does not exist` is a 404 - the imag
 
 OCI registries like quay.io do not have a standardized public model namespace the way Ollama does. On Ollama, any model listed at ollama.com/library is pullable with no setup. On quay.io, models must be explicitly published by their maintainers as OCI artifacts. There is no central catalog to browse. This makes OCI transport less convenient for discovery and experimentation but more suitable for controlled production deployments
 
+## Gemma-3-1b-it via RLCR
+
+RLCR stands for RamaLama Container Registry (`rlcr.io/ramalama/`). It is RamaLama's own purpose-built OCI registry, maintained by the RamaLama project. The idea is that RamaLama curates and publishes a set of known models in OCI format so users have a reliable, project-maintained source alongside community registries like Ollama and HuggingFace. Unlike quay.io which is a general purpose container registry, RLCR exists specifically for RamaLama model distribution.
+
+### Pulling gemma-3-1b-it via RLCR
+
+```bash
+ramalama pull rlcr://gemma-3-1b-it
+```
+
+<img width="876" height="483" alt="Gemma-via-RLCR" src="https://github.com/user-attachments/assets/2587975a-c0a0-4c61-bc82-6fdf24fd8113" />
+
+**Output**
+
+The pull output is visibly different from the outputs o fthe models pulled via HuggingFace and Ollama. Instead of a single file progress bar, RLCR copies 14 individual blobs and a config layer, then writes a manifest. Each blob is a layer of the OCI image. 
+
+### Benchmark Test 1 (Failed to run the model)
+
+```bash
+ramalama run rlcr://gemma-3-1b-it "List the Four Foundations of the Fedora project. Provide only the four words, nothing else."
+```
+
+<img width="1301" height="181" alt="Gemma-error" src="https://github.com/user-attachments/assets/9e93e06c-2a0f-4aa0-bdea-4f2a00a4487b" />
+
+
+**Output:**
+Error: Failed to serve model gemma-3-1b-it, for ramalama run command
+
+**Analysis:**
+Two things distinguish this failure from the granite and phi3.5 timeouts:
+
+- **No 180 second health check** - granite and phi3.5 produced 180 seconds of dots before failing. Gemma failed in under a second. This rules out RAM exhaustion. 
+
+- **Pull format difference** - Gemma was pulled as layered OCI blobs, not as a single GGUF file. The llama.cpp runtime that RamaLama uses for inference expects a GGUF file. RamaLama's container layer handles the translation between OCI image format and the GGUF runtime - the instant failure suggests this translation did not succeed for this specific model on this environment.
+
+
 
 ## Ramalama - serve 
 
@@ -320,24 +356,32 @@ ready for the next request.
 
 ## Transport comparison
 
-| Transport | Model | Pull Result | Run Result |
-|---|---|---|---|
-| HuggingFace | Qwen 0.5B | ✅ | ✅ (refused to answer) |
-| Ollama | Granite dense 2B | ✅ | ❌ RAM timeout |
-| Ollama | Granite MoE 1B | ✅ | ✅ (hallucinated) |
-| Ollama | TinyLlama 1.1B | ✅ | ✅ (hallucinated) |
-| HuggingFace | TinyLlama 1.1B | ✅ | ✅ (hallucinated) |
-| OCI quay.io | TinyLlama | ❌ Does not exist | — |
+## Transport Comparison Summary
+
+| Transport | Model | Pull Result | Run Result | Failure Mode |
+|---|---|---|---|---|
+| HuggingFace (`hf://`) | Qwen 2.5-0.5B | ✅ Success | ⚠️ Refused to answer | Safety over-alignment |
+| Ollama (`ollama://`) | Granite dense 2B | ✅ Success | ❌ 180s timeout | RAM — KV cache needs ~10GB |
+| Ollama (`ollama://`) | Granite MoE 1B | ✅ Success | ✅ Ran — hallucinated | No Fedora knowledge in weights |
+| Ollama (`ollama://`) | TinyLlama 1.1B | ✅ Success | ✅ Ran — hallucinated | No Fedora knowledge in weights |
+| HuggingFace (`hf://`) | TinyLlama 1.1B | ✅ Success | ✅ Ran — hallucinated | No Fedora knowledge in weights |
+| OCI quay.io (`oci://`) | TinyLlama | ❌ Does not exist | — | Image not published at path |
+| RLCR (`rlcr://`) | Gemma 3-1b-it | ✅ Success | ❌ Instant error | OCI-to-GGUF runtime error |
 
 ## Failure mode analysis
 
-I could see three distinct failure modes- 
+The failures across different models and their transports can be summarized as follows-
 
 1. **Safety refusal** - Qwen refused to answer citing safety concerns. The model is too small to differenciate publically available knowledge from sensitive information.
 
 2. **RAM timeout** - Granite dense 2B timed out. Disk size (1.46 GB) is not the same as runtime RAM required (~10 GB KV cache). Since there was no swap available it meant there was no fallback.
 
 3. **Hallucination** - Every model that did run produced completely wrong answers on Fedora-specific questions. Granite MoE invented corporate values. TinyLlama invented Linux components and then connected Fedora to sustainable forestry.
+
+4. **Image not found** - The quay.io OCI pull failed in 2.4 seconds with "does not exist". Unlike Ollama which has a public searchable library, OCI registries like quay.io have no standard model namespace. Models must be explicitly published by their maintainers.
+
+5. **Runtime compatibility error** - Gemma pulled successfully from RLCR as a layered OCI artifact but the run failed instantly with no timeout. The RLCR transport worked but the llama.cpp runtime failed to initialize the model from the OCI layer format. This failure is at the inference layer.
+
 
 ## The controlled transport experiment
 
