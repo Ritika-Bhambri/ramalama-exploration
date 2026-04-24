@@ -252,7 +252,7 @@ Error: Failed to serve model gemma-3-1b-it, for ramalama run command
 **Analysis:**
 This failure looked different from the granite failure due to timeout - 
 
-- **No 180 second health check** - granite and phi3.5 produced 180 seconds of dots before failing. Gemma failed in under a second. This rules out RAM exhaustion. 
+- **No 180 second health check** - granite produced 180 seconds of dots before failing. Gemma failed in under a second. This rules out RAM exhaustion. 
 
 - **Pull format difference** - Gemma was pulled as layered OCI blobs, not as a single GGUF file. The llama.cpp runtime that RamaLama uses for inference expects a GGUF file. RamaLama's container layer handles the translation between OCI image format and the GGUF runtime - the instant failure suggests this translation did not succeed for this specific model on this environment.
 
